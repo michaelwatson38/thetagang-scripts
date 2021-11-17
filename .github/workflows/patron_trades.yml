@@ -21,8 +21,8 @@ jobs:
           image: ${{ env.IMAGE_NAME }}
           tags: latest ${{ github.sha }}
           containerfiles: |
-            theta_trends/containerfile
-          context: theta_trends
+            patron_trades/containerfile
+          context: patron_trades
 
       - name: Log in to the GitHub Container registry
         uses: redhat-actions/podman-login@v1
