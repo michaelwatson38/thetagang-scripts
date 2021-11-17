@@ -86,13 +86,13 @@ class IDPrinter(tweepy.Stream):
         if raw_data['retweeted'] or "RT @" in raw_data['text']:
             logging.info("Found a retweet, skipping...")
             logging.info(raw_data['text'])
-            pass
+            return
 
         parsed = parse_earnings(raw_data)
 
         if not parsed:
             logging.info(f"🤷🏻‍♂️ Parse failed on {parsed['text']}")
-            pass
+            return
 
         logging.info(f"📤 Sending discord message for {parsed['symbol']}")
         create_discord_message(parsed)
