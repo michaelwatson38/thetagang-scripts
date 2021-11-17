@@ -30,7 +30,10 @@ def get_trends():
 
 def create_discord_message(ticker):
     """Send a message to the thetagang discord."""
-    message = f"**${ticker}** https://thetagang.com/symbols/{ticker}"
+    message = (
+        f"New trending ticker: ${ticker} "
+        f"https://thetagang.com/symbols/{ticker}"
+    )
     webhook = DiscordWebhook(
         content=message,
         url=WEBHOOK_URL,
