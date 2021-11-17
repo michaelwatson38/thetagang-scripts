@@ -4,7 +4,6 @@ LABEL org.opencontainers.image.description "Send earnings reports to the ThetaGa
 LABEL org.opencontainers.image.authors "Major Hayden <major@mhtx.net>"
 LABEL org.opencontainers.image.url "https://github.com/major/thetagang-scripts"
 
-RUN pip install discord-webhook tweepy
 RUN mkdir /app
 COPY earnings_reports.py requirements.txt /app
 RUN pip install -U pip wheel; pip install -r /app/requirements.txt
