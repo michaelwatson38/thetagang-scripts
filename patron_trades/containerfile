@@ -5,7 +5,7 @@ LABEL org.opencontainers.image.authors "Major Hayden <major@mhtx.net>"
 LABEL org.opencontainers.image.url "https://github.com/major/thetagang-scripts"
 
 RUN mkdir /app
-COPY theta_trends.py requirements.txt /app
+COPY patron_trades.py requirements.txt /app
 RUN pip install -U pip wheel; pip install -r /app/requirements.txt
 RUN chmod +x /app/patron_trades.py
 CMD ["/app/patron_trades.py"]
