@@ -1,0 +1,7 @@
+FROM docker.io/library/python:3.10-alpine
+RUN pip install discord-webhook tweepy
+RUN mkdir /app
+COPY earnings_reports.py requirements.txt /app
+RUN pip install -U pip wheel; pip install -r /app/requirements.txt
+RUN chmod +x /app/earnings_reports.py
+CMD ["/app/earnings_reports.py"]
