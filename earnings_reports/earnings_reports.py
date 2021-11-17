@@ -80,8 +80,9 @@ class IDPrinter(tweepy.Stream):
         logging.info(f"📤 Sending discord message for {parsed['symbol']}")
         create_discord_message(parsed)
 
+
 # Print a message to Discord noting that we started up.
-logging.INFO('Starting up...')
+logging.info('Starting up...')
 create_discord_message({
     "emoji": "🚀",
     "text": "Starting up..."
@@ -97,7 +98,7 @@ printer = IDPrinter(
 printer.filter(follow=[55395551])
 
 # Print a message to Discord noting that we shut down.
-logging.INFO('Shutting down...')
+logging.info('Shutting down...')
 create_discord_message({
     "emoji": "💤",
     "text": "Shutting down..."
