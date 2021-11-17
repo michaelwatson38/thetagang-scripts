@@ -70,7 +70,9 @@ def recently_traded(symbol):
     trades = requests.get(url, data=payload).json()['data']['trades']
 
     # Skip this message if nobody has traded this ticker.
-    if not trades:
+    if trades:
+        logging.info(f"Found {len(trades)} trades on thetagang.com for {symbol}")
+    else:
         logging.info(f"Message skipped due to no trades for {symbol}")
         return False
 
