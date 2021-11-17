@@ -80,6 +80,11 @@ class IDPrinter(tweepy.Stream):
         logging.info(f"📤 Sending discord message for {parsed['symbol']}")
         create_discord_message(parsed)
 
+# Print a message to Discord noting that we started up.
+create_discord_message({
+    "emoji": "🚀",
+    "text": "Starting up..."
+})
 
 # Initialize instance of the subclass
 printer = IDPrinter(
@@ -89,3 +94,9 @@ printer = IDPrinter(
 
 # Follow @EPSGUID tweets.
 printer.filter(follow=[55395551])
+
+# Print a message to Discord noting that we shut down.
+create_discord_message({
+    "emoji": "💤",
+    "text": "Going to sleep..."
+})
