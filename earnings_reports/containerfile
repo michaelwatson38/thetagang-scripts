@@ -1,4 +1,9 @@
 FROM docker.io/library/python:3.10-alpine
+
+LABEL org.opencontainers.image.description "Send earnings reports to the ThetaGang Discord"
+LABEL org.opencontainers.image.authors "Major Hayden <major@mhtx.net>"
+LABEL org.opencontainers.image.url "https://github.com/major/thetagang-scripts"
+
 RUN pip install discord-webhook tweepy
 RUN mkdir /app
 COPY earnings_reports.py requirements.txt /app
