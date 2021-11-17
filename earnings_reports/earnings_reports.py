@@ -90,6 +90,10 @@ class IDPrinter(tweepy.Stream):
 
         parsed = parse_earnings(raw_data)
 
+        if not recently_traded(parsed['symbol']):
+            logging.info(f"⭕ No recent trades for {parsed['symbol']}")
+            return
+
         if not parsed:
             logging.info(f"🤷🏻‍♂️ Parse failed on {parsed['text']}")
             return
