@@ -148,8 +148,8 @@ while True:
 
     for trade in trades:
         # Only show patron trades.
-        # if trade['User']['role'] == 'member':
-        #     continue
+        if trade['User']['role'] == 'member':
+            continue
 
         # Set a trade key that we can use as a marker for trades we've seen.
         action = "closed" if trade['close_date'] else "opened"
