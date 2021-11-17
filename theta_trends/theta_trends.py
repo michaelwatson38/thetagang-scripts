@@ -34,7 +34,8 @@ def create_discord_message(ticker):
     webhook = DiscordWebhook(
         content=message,
         url=WEBHOOK_URL,
-        username="Trends Bot 🚀"
+        username="Trends Bot 🚀",
+        rate_limit_retry=True
     )
     return webhook.execute()
 

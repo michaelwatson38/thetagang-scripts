@@ -32,7 +32,8 @@ def create_discord_message(parsed):
     webhook = DiscordWebhook(
         url=WEBHOOK_URL,
         content=message,
-        username="Earnings Bot 💰"
+        username="Earnings Bot 💰",
+        rate_limit_retry=True
     )
     return webhook.execute()
 

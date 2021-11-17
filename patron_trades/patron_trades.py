@@ -177,7 +177,8 @@ while True:
             webhook = DiscordWebhook(
                 url=WEBHOOK_URL,
                 content=message,
-                username="Trades Bot 📈"
+                username="Trades Bot 📈",
+                rate_limit_retry=True,
             )
             webhook.execute()
 
