@@ -66,8 +66,8 @@ def parse_earnings(tweet_json):
 def recently_traded(symbol):
     """Check if a ticker was recently traded on thetagang.com."""
     url = "https://api.thetagang.com/trades"
-    payload = {"ticker": symbol}
-    trades = requests.get(url, data=payload).json()['data']['trades']
+    params = {"ticker": symbol}
+    trades = requests.get(url, params=params).json()['data']['trades']
 
     # Skip this message if nobody has traded this ticker.
     if trades:
