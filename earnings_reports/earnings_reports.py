@@ -1,10 +1,19 @@
 #!/usr/bin/env python
 """Send earnings reports from @EPSGUID to Discord."""
+import logging
 import os
+import sys
 
 from discord_webhook import DiscordWebhook
 import requests
 import tweepy
+
+
+logging.basicConfig(
+    stream=sys.stdout,
+    level=logging.DEBUG,
+    format="%(asctime)s;%(levelname)s;%(message)s"
+)
 
 # The Discord webhook URL where messages should be sent. For threads, append
 # ?thread_id=1234567890 to the end of the URL.
@@ -60,7 +69,7 @@ def recently_traded(symbol):
 
     # Skip this message if nobody has traded this ticker.
     if not resp.json():
-        print(f"Message skipped due to no trades for {symbol}")
+        logging.info(f"Message skipped due to no trades for {symbol}")
         return False
 
     return True
@@ -73,22 +82,22 @@ class IDPrinter(tweepy.Stream):
         raw_data = status._json
 
         if raw_data['retweeted'] or "RT @" in raw_data['text']:
-            print("Found a retweet, skipping...")
-            print(raw_data['text'])
+            logging.info("Found a retweet, skipping...")
+            logging.info(raw_data['text'])
             pass
 
         parsed = parse_earnings(raw_data)
 
         if not parsed:
-            print(f"🤷🏻‍♂️ Parse failed on {parsed['text']}")
+            logging.info(f"🤷🏻‍♂️ Parse failed on {parsed['text']}")
             pass
 
-        print(f"📤 Sending discord message for {parsed['symbol']}")
+        logging.info(f"📤 Sending discord message for {parsed['symbol']}")
         create_discord_message(parsed)
 
 
 # Print a message to Discord noting that we started up.
-print('Starting up...')
+logging.info('Starting up...')
 create_discord_message({
     "emoji": "🚀",
     "text": "Starting up..."
@@ -104,7 +113,7 @@ printer = IDPrinter(
 printer.filter(follow=[55395551])
 
 # Print a message to Discord noting that we shut down.
-print('Shutting down...')
+logging.info('Shutting down...')
 create_discord_message({
     "emoji": "💤",
     "text": "Shutting down..."
