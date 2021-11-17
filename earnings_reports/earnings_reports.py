@@ -31,7 +31,8 @@ def create_discord_message(parsed):
     message = f"{parsed['emoji']} {parsed['text']}"
     webhook = DiscordWebhook(
         url=WEBHOOK_URL,
-        content=message
+        content=message,
+        username="Earnings Bot 💰"
     )
     return webhook.execute()
 
