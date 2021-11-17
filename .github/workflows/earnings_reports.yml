@@ -1,4 +1,4 @@
-name: Build earnings_reports container
+name: earnings_reports
 on:
   - push
 
@@ -21,7 +21,8 @@ jobs:
           image: ${{ env.IMAGE_NAME }}
           tags: latest ${{ github.sha }}
           containerfiles: |
-            ./Containerfile
+            earnings_reports/containerfile
+          context: earnings_reports
 
       - name: Log in to the GitHub Container registry
         uses: redhat-actions/podman-login@v1
