@@ -1,0 +1,12 @@
+FROM docker.io/library/python:3.10-alpine
+
+LABEL org.opencontainers.image.description "Send thetagang.com trends to the ThetaGang Discord"
+LABEL org.opencontainers.image.authors "Major Hayden <major@mhtx.net>"
+LABEL org.opencontainers.image.url "https://github.com/major/thetagang-scripts"
+
+RUN pip install discord-webhook tweepy
+RUN mkdir /app
+COPY theta_trends.py requirements.txt /app
+RUN pip install -U pip wheel; pip install -r /app/requirements.txt
+RUN chmod +x /app/theta_trends.py
+CMD ["/app/theta_trends.py"]
