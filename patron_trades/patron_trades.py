@@ -6,6 +6,7 @@ import os
 import sys
 import time
 
+from dateutil.parser import parse
 from discord_webhook import DiscordWebhook
 import requests
 
@@ -46,6 +47,20 @@ def generate_trade_message(trade):
 
     return None
 
+
+def get_pretty_expiry(date_string):
+    """Take a date string from JSON and make a pretty expiry date string."""
+    # Get DTE.
+    parsed_date = parse(date_string, ignoretz=True)
+    dte = (parsed_date - datetime.now()).days
+
+    # Only show month/date if the option expires in less than 365 days.
+    if dte <= 365:
+        return parsed_date.strftime("%m/%d")
+
+    return parsed_date.strftime("%m/%d/%y")
+
+
 def common_stock(trade):
     """Generate a message for stock transactions."""
     trade_type = trade['type'].lower()
@@ -66,8 +81,12 @@ def single_leg_credit(trade):
     user = trade['User']['username']
     strike = trade['short_put'] if "put" in trade_type else trade['short_call']
     symbol = trade['symbol'].upper()
+    expiry = get_pretty_expiry(trade['expiry_date'])
 
-    return f"{user} {action} a {trade_type} on ${symbol} at ${strike}"
+    return (
+        f"{user} {action} a {trade_type} on ${symbol} at ${strike} "
+        f"expiring {expiry}"
+    )
 
 
 def single_leg_debit(trade):
@@ -77,8 +96,12 @@ def single_leg_debit(trade):
     user = trade['User']['username']
     strike = trade['long_put'] if "put" in trade_type else trade['long_call']
     symbol = trade['symbol'].upper()
+    expiry = get_pretty_expiry(trade['expiry_date'])
 
-    return f"{user} {action} a {trade_type} on ${symbol} at ${strike}"
+    return (
+        f"{user} {action} a {trade_type} on ${symbol} at ${strike} "
+        f"expiring {expiry}"
+    )
 
 
 def spread_credit(trade):
@@ -93,9 +116,10 @@ def spread_credit(trade):
         trade['long_put'] if "put" in trade_type else trade['long_call']
     )
     symbol = trade['symbol'].upper()
+    expiry = get_pretty_expiry(trade['expiry_date'])
 
     return (
-        f"{user} {action} a {trade_type} on ${symbol} "
+        f"{user} {action} a {trade_type} on ${symbol} expiring {expiry} "
         f"(short: ${short_strike} long: ${long_strike})"
     )
 
@@ -111,9 +135,10 @@ def spread_debit(trade):
         trade['long_put'] if "put" in trade_type else trade['long_call']
     )
     symbol = trade['symbol'].upper()
+    expiry = get_pretty_expiry(trade['expiry_date'])
 
     return (
-        f"{user} {action} a {trade_type} on ${symbol} "
+        f"{user} {action} a {trade_type} on ${symbol} expiring {expiry} "
         f"(short: ${short_strike} long: ${long_strike})"
     )
 
@@ -129,9 +154,10 @@ def strangle(trade):
         trade['short_put'] if "short" in trade_type else trade['long_put']
     )
     symbol = trade['symbol'].upper()
+    expiry = get_pretty_expiry(trade['expiry_date'])
 
     return (
-        f"{user} {action} a {trade_type} on ${symbol} "
+        f"{user} {action} a {trade_type} on ${symbol} expiring {expiry} "
         f"(call: ${call_strike} put: ${put_strike})"
     )
 
