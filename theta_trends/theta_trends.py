@@ -15,9 +15,10 @@ WEBHOOK_URL = os.environ.get('WEBHOOK_URL')
 trends_url = "https://api.thetagang.com/trends"
 trends = []
 
+# Set up logging.
 logging.basicConfig(
     stream=sys.stdout,
-    level=logging.DEBUG,
+    level=logging.INFO,
     format="%(asctime)s;%(levelname)s;%(message)s"
 )
 

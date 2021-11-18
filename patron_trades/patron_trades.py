@@ -16,9 +16,10 @@ seen_trades = []
 # ?thread_id=1234567890 to the end of the URL.
 WEBHOOK_URL = os.environ.get('WEBHOOK_URL')
 
+# Set up logging.
 logging.basicConfig(
     stream=sys.stdout,
-    level=logging.DEBUG,
+    level=logging.INFO,
     format="%(asctime)s;%(levelname)s;%(message)s"
 )
 
@@ -146,6 +147,12 @@ while True:
     # Are we on the first run after startup?
     first_run = True if not seen_trades else False
 
+    # Create an empty list to hold messages.
+    messages = []
+
+    # Create an empty string to hold the webhook content.
+    webhook_content = ""
+
     for trade in trades:
         # Only show patron trades.
         if trade['User']['role'] == 'member':
@@ -171,21 +178,35 @@ while True:
             f"/{trade['guid']}"
         )
 
-        # Send the message to Discord if we're not on the first run.
-        if not first_run:
-            print(message)
-            webhook = DiscordWebhook(
-                url=WEBHOOK_URL,
-                content=message,
-                username="Trades Bot 📈",
-                rate_limit_retry=True,
-            )
-            webhook.execute()
+        # Add the current message onto our list of messages.
+        print(message)
+        messages.append(message)
 
         # Add this trade to the list of seen trades.
         logging.info(f"Adding {trade_key} to list of seen trades")
         seen_trades.append(trade_key)
 
+    # Handle messages depending on how many we have.
+    if len(messages) == 1:
+        # Just one? Send it through as is:
+        webhook_content = messages[0]
+    elif len(messages) > 1:
+        # Multiple trades? Batch them to avoid Discord rate limits.
+        webhook_content = "Multiple trades:\n" + "\n".join(messages)
+
+    # Send the message to Discord if we're not on the first run and we have
+    # messages to send.
+    if messages and not first_run:
+        webhook = DiscordWebhook(
+            url=WEBHOOK_URL,
+            content=webhook_content,
+            username="Trades Bot 📈",
+            rate_limit_retry=True
+        )
+        webhook.execute()
+
+    # Clear the list of messages.
+    messages = []
 
     # Clear our first run marker.
     first_run = False

@@ -9,12 +9,6 @@ import requests
 import tweepy
 
 
-logging.basicConfig(
-    stream=sys.stdout,
-    level=logging.DEBUG,
-    format="%(asctime)s;%(levelname)s;%(message)s"
-)
-
 # The Discord webhook URL where messages should be sent. For threads, append
 # ?thread_id=1234567890 to the end of the URL.
 WEBHOOK_URL = os.environ.get('WEBHOOK_URL')
@@ -25,6 +19,12 @@ consumer_secret = os.environ.get('CONSUMER_SECRET')
 access_token = os.environ.get('ACCESS_TOKEN')
 access_token_secret = os.environ.get('ACCESS_TOKEN_SECRET')
 
+# Set up logging.
+logging.basicConfig(
+    stream=sys.stdout,
+    level=logging.INFO,
+    format="%(asctime)s;%(levelname)s;%(message)s"
+)
 
 def create_discord_message(parsed):
     """Generate a Discord message based on the earnings report."""
