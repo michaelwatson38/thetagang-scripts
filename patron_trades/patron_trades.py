@@ -83,7 +83,7 @@ def single_leg_credit(trade):
     symbol = trade['symbol'].upper()
     expiry = get_pretty_expiry(trade['expiry_date'])
     qty = trade['quantity']
-    premium = trade['price_filled']
+    premium = "${:,.2f}".format(trade['price_filled'])
     
     return (
         f"{user} {action} {qty} {trade_type} on ${symbol} at ${strike} for ${premium} "
@@ -100,7 +100,7 @@ def single_leg_debit(trade):
     symbol = trade['symbol'].upper()
     expiry = get_pretty_expiry(trade['expiry_date'])
     qty = trade['quantity']
-    premium = trade['price_filled']
+    premium = "${:,.2f}".format(trade['price_filled'])
     
     return (
         f"{user} {action} {qty} {trade_type} on ${symbol} at ${strike} for ${premium} "
@@ -122,7 +122,7 @@ def spread_credit(trade):
     symbol = trade['symbol'].upper()
     expiry = get_pretty_expiry(trade['expiry_date'])
     qty = trade['quantity']
-    premium = trade['price_filled']
+    premium = "${:,.2f}".format(trade['price_filled'])
     
     return (
         f"{user} {action} {qty} {trade_type} on ${symbol} for ${premium} expiring {expiry} "
@@ -143,7 +143,7 @@ def spread_debit(trade):
     symbol = trade['symbol'].upper()
     expiry = get_pretty_expiry(trade['expiry_date'])
     qty = trade['quantity']
-    premium = trade['price_filled']
+    premium = "${:,.2f}".format(trade['price_filled'])
     
     return (
         f"{user} {action} {qty} {trade_type} on ${symbol} for ${premium} expiring {expiry} "
@@ -164,7 +164,7 @@ def strangle(trade):
     symbol = trade['symbol'].upper()
     expiry = get_pretty_expiry(trade['expiry_date'])
     qty = trade['quantity']
-    premium = trade['price_filled']
+    premium = "${:,.2f}".format(trade['price_filled'])
     
     return (
         f"{user} {action} {qty} {trade_type} on ${symbol} for ${premium} expiring {expiry} "
