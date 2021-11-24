@@ -59,6 +59,10 @@ def parse_earnings(tweet_json):
     except IndexError:
         # We don't want any tweets without hashtags.
         return None
+    
+    # Skip the tweets about upcoming earnings with high volatility.
+    if "volatility" in details["hashtag"]:
+        return None
 
     return details
 
