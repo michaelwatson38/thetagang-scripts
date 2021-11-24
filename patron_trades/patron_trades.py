@@ -82,9 +82,11 @@ def single_leg_credit(trade):
     strike = trade['short_put'] if "put" in trade_type else trade['short_call']
     symbol = trade['symbol'].upper()
     expiry = get_pretty_expiry(trade['expiry_date'])
-
+    qty = trade['quantity']
+    premium = "${:,.2f}".format(trade['price_filled'])
+    
     return (
-        f"{user} {action} a {trade_type} on ${symbol} at ${strike} "
+        f"{user} {action} {qty} {trade_type} on ${symbol} at ${strike} for ${premium} "
         f"expiring {expiry}"
     )
 
@@ -97,9 +99,11 @@ def single_leg_debit(trade):
     strike = trade['long_put'] if "put" in trade_type else trade['long_call']
     symbol = trade['symbol'].upper()
     expiry = get_pretty_expiry(trade['expiry_date'])
-
+    qty = trade['quantity']
+    premium = "${:,.2f}".format(trade['price_filled'])
+    
     return (
-        f"{user} {action} a {trade_type} on ${symbol} at ${strike} "
+        f"{user} {action} {qty} {trade_type} on ${symbol} at ${strike} for ${premium} "
         f"expiring {expiry}"
     )
 
@@ -117,9 +121,11 @@ def spread_credit(trade):
     )
     symbol = trade['symbol'].upper()
     expiry = get_pretty_expiry(trade['expiry_date'])
-
+    qty = trade['quantity']
+    premium = "${:,.2f}".format(trade['price_filled'])
+    
     return (
-        f"{user} {action} a {trade_type} on ${symbol} expiring {expiry} "
+        f"{user} {action} {qty} {trade_type} on ${symbol} for ${premium} expiring {expiry} "
         f"(short: ${short_strike} long: ${long_strike})"
     )
 
@@ -136,9 +142,11 @@ def spread_debit(trade):
     )
     symbol = trade['symbol'].upper()
     expiry = get_pretty_expiry(trade['expiry_date'])
-
+    qty = trade['quantity']
+    premium = "${:,.2f}".format(trade['price_filled'])
+    
     return (
-        f"{user} {action} a {trade_type} on ${symbol} expiring {expiry} "
+        f"{user} {action} {qty} {trade_type} on ${symbol} for ${premium} expiring {expiry} "
         f"(short: ${short_strike} long: ${long_strike})"
     )
 
@@ -155,9 +163,11 @@ def strangle(trade):
     )
     symbol = trade['symbol'].upper()
     expiry = get_pretty_expiry(trade['expiry_date'])
-
+    qty = trade['quantity']
+    premium = "${:,.2f}".format(trade['price_filled'])
+    
     return (
-        f"{user} {action} a {trade_type} on ${symbol} expiring {expiry} "
+        f"{user} {action} {qty} {trade_type} on ${symbol} for ${premium} expiring {expiry} "
         f"(call: ${call_strike} put: ${put_strike})"
     )
 
