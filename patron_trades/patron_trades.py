@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+"""Relay trades from thetagang.com Patrons to Discord."""
 from datetime import datetime
 import json
 import logging
@@ -7,246 +8,142 @@ import sys
 import time
 
 from dateutil.parser import parse
-from discord_webhook import DiscordWebhook
+from discord_webhook import DiscordWebhook, DiscordEmbed
 import requests
 
-# Make an empty list of trades we've already seen.
-seen_trades = []
-
-# The Discord webhook URL where messages should be sent. For threads, append
-# ?thread_id=1234567890 to the end of the URL.
-WEBHOOK_URL = os.environ.get('WEBHOOK_URL')
 
 # Set up logging.
 logging.basicConfig(
     stream=sys.stdout,
-    level=logging.INFO,
+    level=logging.DEBUG,
     format="%(asctime)s;%(levelname)s;%(message)s"
 )
 
 
-def generate_trade_message(trade):
-    """Parse a trade and generate a Discord message."""
-    if trade['type'] in ['CASH SECURED PUT', 'COVERED CALL', 'SHORT NAKED CALL']:
-        return single_leg_credit(trade)
+class PatronTrades:
+    """Relay trades from thetagang.com Patrons to Discord."""
 
-    if trade['type'] in ['LONG NAKED CALL', 'LONG NAKED PUT']:
-        return single_leg_debit(trade)
+    def __init__(self):
+        """Startup tasks."""
+        self.first_run = True
+        self.seen_trades = []
+        self.webhook_url = os.environ.get('WEBHOOK_URL')
 
-    if trade['type'] in ['PUT CREDIT SPREAD', 'CALL CREDIT SPREAD']:
-        return spread_credit(trade)
+    def get_trades(self):
+        """Download the latest set of trades from thetagang.com."""
+        url = "https://api.thetagang.com/trades"
+        resp = requests.get(url)
+        raw_trades = resp.json()['data']['trades']
 
-    if trade['type'] in ['PUT DEBIT SPREAD', 'CALL DEBIT SPREAD']:
-        return spread_debit(trade)
+        # Keep only patron trades that are opening trades.
+        valid_trades = [
+            x for x in raw_trades
+            if x['User']['role'] == 'patron' and x['close_date'] is None
+        ]
+        valid_trades.reverse()
 
-    if "COMMON STOCK" in trade['type']:
-        return common_stock(trade)
+        self.latest_trades = valid_trades
 
-    if "STRANGLE" in trade['type']:
-        return common_stock(trade)
+    def get_pretty_expiry(self, date_string):
+        """Take a date string from JSON and make a pretty expiry date string."""
+        # Get DTE.
+        parsed_date = parse(date_string, ignoretz=True)
+        dte = (parsed_date - datetime.now()).days
 
-    return None
+        # Only show month/date if the option expires in less than 365 days.
+        if dte <= 365:
+            return parsed_date.strftime("%m/%d")
 
+        return parsed_date.strftime("%m/%d/%y")
 
-def get_pretty_expiry(date_string):
-    """Take a date string from JSON and make a pretty expiry date string."""
-    # Get DTE.
-    parsed_date = parse(date_string, ignoretz=True)
-    dte = (parsed_date - datetime.now()).days
+    def get_trade_data(self, trade):
+        """Return trade data."""
+        # Get the most basic information.
+        data = {
+            "trade_type": trade['type'],
+            "user": trade['User']['username'],
+            "user_url": f"https://thetagang.com/{trade['User']['username']}",
+            "symbol": trade['symbol'].upper(),
+            "price": "{:,.2f}".format(trade['price_filled']),
+            "guid": trade['guid'],
+            "expiry": None,
+            "quantity": trade['quantity'],
+            "note": trade['note']
+        }
 
-    # Only show month/date if the option expires in less than 365 days.
-    if dte <= 365:
-        return parsed_date.strftime("%m/%d")
+        # Options trades have expiry dates.
+        if trade['expiry_date']:
+            data['expiry'] = self.get_pretty_expiry(trade['expiry_date'])
 
-    return parsed_date.strftime("%m/%d/%y")
+        # Get the strikes provided.
+        data['strikes'] = {
+            "short put": trade['short_put'],
+            "short call": trade['short_call'],
+            "long put": trade['long_put'],
+            "long call": trade['long_call'],
+        }
+        data['strikes_string'] = '/'.join([
+            f"${v}" for k,v in data['strikes'].items() if v is not None
+        ]).capitalize()
 
+        return data
 
-def common_stock(trade):
-    """Generate a message for stock transactions."""
-    trade_type = trade['type'].lower()
-    user = trade['User']['username']
-    symbol = trade['symbol'].upper()
-    price = "${:,.2f}".format(trade['price_filled'])
-    quantity = trade['quantity']
-
-    action = "bought" if "buy" in trade_type else "sold"
-
-    return f"{user} {action} {quantity} shares of ${symbol} at {price}"
-
-
-def single_leg_credit(trade):
-    """Generate a message for a single leg credit trade."""
-    action = "closed" if trade['close_date'] else "opened"
-    trade_type = trade['type'].lower()
-    user = trade['User']['username']
-    strike = trade['short_put'] if "put" in trade_type else trade['short_call']
-    symbol = trade['symbol'].upper()
-    expiry = get_pretty_expiry(trade['expiry_date'])
-    qty = trade['quantity']
-    premium = "${:,.2f}".format(trade['price_filled'])
-    
-    return (
-        f"{user} {action} {qty} {trade_type} on ${symbol} at ${strike} for {premium} "
-        f"expiring {expiry}"
-    )
-
-
-def single_leg_debit(trade):
-    """Generate a message for a single leg debit trade."""
-    action = "closed" if trade['close_date'] else "opened"
-    trade_type = trade['type'].lower()
-    user = trade['User']['username']
-    strike = trade['long_put'] if "put" in trade_type else trade['long_call']
-    symbol = trade['symbol'].upper()
-    expiry = get_pretty_expiry(trade['expiry_date'])
-    qty = trade['quantity']
-    premium = "${:,.2f}".format(trade['price_filled'])
-    
-    return (
-        f"{user} {action} {qty} {trade_type} on ${symbol} at ${strike} for {premium} "
-        f"expiring {expiry}"
-    )
-
-
-def spread_credit(trade):
-    """Generate a message for a credit spread."""
-    action = "closed" if trade['close_date'] else "opened"
-    trade_type = trade['type'].lower()
-    user = trade['User']['username']
-    short_strike = (
-        trade['short_put'] if "put" in trade_type else trade['short_call']
-    )
-    long_strike = (
-        trade['long_put'] if "put" in trade_type else trade['long_call']
-    )
-    symbol = trade['symbol'].upper()
-    expiry = get_pretty_expiry(trade['expiry_date'])
-    qty = trade['quantity']
-    premium = "${:,.2f}".format(trade['price_filled'])
-    
-    return (
-        f"{user} {action} {qty} {trade_type} on ${symbol} for {premium} expiring {expiry} "
-        f"(short: ${short_strike} long: ${long_strike})"
-    )
-
-def spread_debit(trade):
-    """Generate a message for a debit spread."""
-    action = "closed" if trade['close_date'] else "opened"
-    trade_type = trade['type'].lower()
-    user = trade['User']['username']
-    short_strike = (
-        trade['short_put'] if "put" in trade_type else trade['short_call']
-    )
-    long_strike = (
-        trade['long_put'] if "put" in trade_type else trade['long_call']
-    )
-    symbol = trade['symbol'].upper()
-    expiry = get_pretty_expiry(trade['expiry_date'])
-    qty = trade['quantity']
-    premium = "${:,.2f}".format(trade['price_filled'])
-    
-    return (
-        f"{user} {action} {qty} {trade_type} on ${symbol} for {premium} expiring {expiry} "
-        f"(short: ${short_strike} long: ${long_strike})"
-    )
-
-def strangle(trade):
-    """Generate a message for a strangle."""
-    action = "closed" if trade['close_date'] else "opened"
-    trade_type = trade['type'].lower()
-    user = trade['User']['username']
-    call_strike = (
-        trade['short_call'] if "short" in trade_type else trade['long_call']
-    )
-    put_strike = (
-        trade['short_put'] if "short" in trade_type else trade['long_put']
-    )
-    symbol = trade['symbol'].upper()
-    expiry = get_pretty_expiry(trade['expiry_date'])
-    qty = trade['quantity']
-    premium = "${:,.2f}".format(trade['price_filled'])
-    
-    return (
-        f"{user} {action} {qty} {trade_type} on ${symbol} for {premium} expiring {expiry} "
-        f"(call: ${call_strike} put: ${put_strike})"
-    )
-
-
-
-while True:
-    url = "https://api.thetagang.com/trades"
-    trades = requests.get(url).json()['data']['trades']
-
-    # Start with the oldest first.
-    trades.reverse()
-
-    # Are we on the first run after startup?
-    first_run = True if not seen_trades else False
-
-    # Create an empty list to hold messages.
-    messages = []
-
-    # Create an empty string to hold the webhook content.
-    webhook_content = ""
-
-    for trade in trades:
-        # Only show patron trades.
-        if trade['User']['role'] == 'member':
-            continue
-
-        # Set a trade key that we can use as a marker for trades we've seen.
-        action = "closed" if trade['close_date'] else "opened"
-        trade_key = f"{trade['guid']}-{action}"
-        if trade_key in seen_trades:
-            continue
-
-        # Build a message based on the trade data.
-        message = generate_trade_message(trade)
-
-        # Print a failure if we caught a trade we couldn't parse
-        if not message:
-            print("🤷🏻‍♂️ Not sure how to handle:")
-            print(json.dumps(trade, indent=2))
-
-        # Append the URL to the trade at the end of the message.
-        message = (
-            f"{message} https://thetagang.com/{trade['User']['username']}"
-            f"/{trade['guid']}"
-        )
-
-        # Add the current message onto our list of messages.
-        print(message)
-        messages.append(message)
-
-        # Add this trade to the list of seen trades.
-        logging.info(f"Adding {trade_key} to list of seen trades")
-        seen_trades.append(trade_key)
-
-    # Handle messages depending on how many we have.
-    if len(messages) == 1:
-        # Just one? Send it through as is:
-        webhook_content = messages[0]
-    elif len(messages) > 1:
-        # Multiple trades? Batch them to avoid Discord rate limits.
-        webhook_content = "Multiple trades:\n" + "\n".join(messages)
-
-    # Send the message to Discord if we're not on the first run and we have
-    # messages to send.
-    if messages and not first_run:
+    def send_discord_webhook(self, data):
+        """Send the trade message to Discord."""
         webhook = DiscordWebhook(
-            url=WEBHOOK_URL,
-            content=webhook_content,
+            url=self.webhook_url,
             username="Trades Bot 📈",
             rate_limit_retry=True
         )
+        embed = DiscordEmbed(
+            title=(
+                f"${data['symbol']}: {data['strikes_string']} "
+                f"{data['trade_type']} for ${data['price']} "
+                f"expiring {data['expiry']} "
+            ),
+            description=(
+                f"Quantity: {data['quantity']}. "
+                f"Opened by [{data['user']}]({data['user_url']})."
+            ),
+            color='008000',
+            url=f"https://thetagang.com/{data['user']}/{data['guid']}"
+        )
+        embed.set_footer(
+            text=f"Trade notes: {data['note']}"
+        )
+        webhook.add_embed(embed)
         webhook.execute()
 
-    # Clear the list of messages.
-    messages = []
+    def run(self):
+        """Run the trade relay."""
+        self.get_trades()
 
-    # Clear our first run marker.
-    first_run = False
+        # Loop through the latest trades.
+        for trade in self.latest_trades:
+            logging.info("Getting new trades from thetagang.com...")
+            data = self.get_trade_data(trade)
 
-    # Sleep.
-    logging.info("💤 Sleeping for 5 minutes")
-    time.sleep(300)
+            # Skip this trade if we've seen it before.
+            if trade['guid'] in self.seen_trades:
+                logging.info(f"Trade {trade['guid']} was seen before")
+                continue
+
+            # Skip alerts if we are running the script for the first time.
+            if not self.first_run:
+                self.send_discord_webhook(data)
+
+            # Add this trade to the list of seen trades.
+            logging.info(f"Adding {trade['guid']} to the list of seen trades")
+            self.seen_trades.append(trade['guid'])
+
+        # We've completed the first run by this point.
+        self.first_run = False
+
+        # Sleep for five minutes and run again.
+        time.sleep(300)
+        self.run()
+
+
+if __name__ == "__main__":
+    classObj = PatronTrades()
+    classObj.run()
