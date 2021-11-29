@@ -116,11 +116,11 @@ class PatronTrades:
 
     def run(self):
         """Run the trade relay."""
+        logging.info("Getting new trades from thetagang.com...")
         self.get_trades()
 
         # Loop through the latest trades.
         for trade in self.latest_trades:
-            logging.info("Getting new trades from thetagang.com...")
             data = self.get_trade_data(trade)
 
             # Skip this trade if we've seen it before.
