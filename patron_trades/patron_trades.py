@@ -56,6 +56,30 @@ class PatronTrades:
 
         return parsed_date.strftime("%m/%d/%y")
 
+    def get_webhook_color(self, trade_type):
+        """Provide a color for the webhook based on bullish/bearish strategy."""
+        bearish_trades = [
+            "CALL CREDIT SPREAD",
+            "COVERED CALL",
+            "SHORT NAKED CALL",
+            "PUT DEBIT SPREAD",
+            "LONG NAKED PUT",
+            "SELL COMMON STOCK"
+        ]
+        neutral_trades = [
+            "SHORT IRON CONDOR",
+            "SHORT STRANGLE",
+            "SHORT STRADDLE",
+            "LONG STRANGLE",
+            "LONG STRADDLE"
+        ]
+        if trade_type in bearish_trades:
+            return "FD3A4A"
+        elif trade_type in neutral_trades:
+            return "BFAFB2"
+        else:
+            return "299617"
+
     def get_trade_data(self, trade):
         """Return trade data."""
         # Get the most basic information.
@@ -105,7 +129,7 @@ class PatronTrades:
                 f"Quantity: {data['quantity']}. "
                 f"Opened by [{data['user']}]({data['user_url']})."
             ),
-            color='008000',
+            color=self.get_webhook_color(data['trade_type']),
             url=f"https://thetagang.com/{data['user']}/{data['guid']}"
         )
         embed.set_footer(
