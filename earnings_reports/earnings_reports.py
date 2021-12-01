@@ -63,6 +63,11 @@ def parse_earnings(tweet_json):
         # We don't want any tweets without hashtags.
         return None
 
+    # Avoid tweets like these:
+    # https://twitter.com/EPSGUID/status/1466128053034176515
+    if details["hashtag"] in ['earnings', 'volatility']:
+        return None
+
     return details
 
 
