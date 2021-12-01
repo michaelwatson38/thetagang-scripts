@@ -111,6 +111,12 @@ class PatronTrades:
         embed.set_footer(
             text=f"Trade notes: {data['note']}"
         )
+        embed.set_thumbnail(
+            url=(
+                "https://g.foolcdn.com/art/companylogos/square/"
+                f"{data['symbol'].lower()}.png"
+            )
+        )
         webhook.add_embed(embed)
         webhook.execute()
 
