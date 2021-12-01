@@ -35,10 +35,14 @@ class PatronTrades:
         resp = requests.get(url)
         raw_trades = resp.json()['data']['trades']
 
-        # Keep only patron trades that are opening trades.
+        # Keep on trades that are:
+        #  * trades from patrons
+        #  * opening trades (except for stock trades which are always closed)
         valid_trades = [
             x for x in raw_trades
-            if x['User']['role'] == 'patron' and x['close_date'] is None
+            if x['User']['role'] == 'patron' and (
+                x['close_date'] is None or 'COMMON STOCK' in x['type']
+            )
         ]
         valid_trades.reverse()
 
