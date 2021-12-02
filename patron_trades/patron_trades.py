@@ -84,6 +84,24 @@ class PatronTrades:
         else:
             return "299617"
 
+    def get_webhook_title(self, data):
+        """Generate a webhook title based on trade data."""
+        # Set a string for quantity of shares/contracts if > 1.
+        quantity_string = f" ({data['quantity']})"
+        if data['quantity'] == 1:
+            quantity_string = ""
+
+        title = (
+            f"${data['symbol']}: {data['trade_type']}{quantity_string} @ "
+            f"{data['strikes_string']} for ${data['price']}"
+        )
+
+        # Stock trades have no expiration (in theory). 🤣
+        if "COMMON STOCK" not in data['trade_type']:
+            title += f" on {data['expiry']} "
+
+        return title
+
     def get_trade_data(self, trade):
         """Return trade data."""
         # Get the most basic information.
@@ -124,20 +142,13 @@ class PatronTrades:
             rate_limit_retry=True
         )
         embed = DiscordEmbed(
-            title=(
-                f"${data['symbol']}: {data['strikes_string']} "
-                f"{data['trade_type']} for ${data['price']} "
-                f"expiring {data['expiry']} "
-            ),
+            title=(self.get_webhook_title(data)),
             description=(
-                f"Quantity: {data['quantity']}. "
-                f"Opened by [{data['user']}]({data['user_url']})."
+                f"Notes from [{data['user']}]({data['user_url']}): "
+                f"{data['note']}"
             ),
             color=self.get_webhook_color(data['trade_type']),
             url=f"https://thetagang.com/{data['user']}/{data['guid']}"
-        )
-        embed.set_footer(
-            text=f"Trade notes: {data['note']}"
         )
         embed.set_thumbnail(
             url=(
