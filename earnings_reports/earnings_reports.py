@@ -56,9 +56,6 @@ def parse_earnings(tweet_json):
         }
         details['emoji'] = get_emoji(details['hashtag'])
 
-        # Debug print to get rid of volatility tweets.
-        print(details)
-
     except IndexError:
         # We don't want any tweets without hashtags.
         return None

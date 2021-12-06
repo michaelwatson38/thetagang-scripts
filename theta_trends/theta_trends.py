@@ -52,8 +52,8 @@ while True:
     new_trends = [x for x in current_trends if x not in trends]
 
     # Extra logging.
-    logging.info(f"Latest trends: {current_trends}")
-    logging.info(f"Previous trends: {trends}")
+    logging.debug(f"Latest trends: {current_trends}")
+    logging.debug(f"Previous trends: {trends}")
     logging.info(f"New trends: {new_trends}")
 
     # Avoid blasting the chat when the container restarts. Look for an empty old
