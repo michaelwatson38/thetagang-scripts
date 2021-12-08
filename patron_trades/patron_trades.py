@@ -144,7 +144,7 @@ class PatronTrades:
         embed = DiscordEmbed(
             title=(self.get_webhook_title(data)),
             description=(
-                f"[{data['user']}]({data['user_url']}): f"{data['note']}"
+                f"[{data['user']}]({data['user_url']}): {data['note']}"
             ),
             color=self.get_webhook_color(data['trade_type']),
             url=f"https://thetagang.com/{data['user']}/{data['guid']}"
