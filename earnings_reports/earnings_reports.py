@@ -3,6 +3,7 @@
 import logging
 import os
 import sys
+import re
 
 from discord_webhook import DiscordWebhook
 import requests
@@ -26,9 +27,9 @@ logging.basicConfig(
     format="%(asctime)s;%(levelname)s;%(message)s"
 )
 
-def create_discord_message(parsed):
-    """Generate a Discord message based on the earnings report."""
-    message = f"{parsed['emoji']} {parsed['text']}"
+
+def create_discord_message(message):
+    """Publish a Discord message based on the earnings report."""
     webhook = DiscordWebhook(
         url=WEBHOOK_URL,
         content=message,
@@ -36,36 +37,6 @@ def create_discord_message(parsed):
         rate_limit_retry=True
     )
     return webhook.execute()
-
-
-def get_emoji(hashtag):
-    """Return a helpful emoji bashed on the hashtag of the earning report."""
-    if "miss" in hashtag:
-        return "🔴"
-
-    return "🟢"
-
-
-def parse_earnings(tweet_json):
-    """Extract some metadata from the earning report tweet."""
-    try:
-        details = {
-            "symbol": tweet_json['entities']['symbols'][0]['text'],
-            "hashtag": tweet_json['entities']['hashtags'][0]['text'],
-            "text": tweet_json['text']
-        }
-        details['emoji'] = get_emoji(details['hashtag'])
-
-    except IndexError:
-        # We don't want any tweets without hashtags.
-        return None
-
-    # Avoid tweets like these:
-    # https://twitter.com/EPSGUID/status/1466128053034176515
-    if details["hashtag"] in ['earnings', 'volatility']:
-        return None
-
-    return details
 
 
 def recently_traded(symbol):
@@ -76,12 +47,110 @@ def recently_traded(symbol):
 
     # Skip this message if nobody has traded this ticker.
     if trades:
-        logging.info(f"Found {len(trades)} trades on thetagang.com for {symbol}")
+        logging.info(
+            f"Found {len(trades)} trades on thetagang.com for {symbol}"
+        )
     else:
         logging.info(f"Message skipped due to no trades for {symbol}")
         return False
 
     return True
+
+
+class EarningsPublisher(object):
+    """Send earnings events to Discord."""
+
+    def get_consensus(self):
+        """Get consensus for the earnings."""
+        regex = r"consensus was (\(?\$[0-9\.]+\)?)"
+        result = re.findall(regex, self.tweet_text)
+
+        # Some earnings reports for smaller stocks don't have a consensus.
+        if not result:
+            return None
+
+        # Parse the consensus and handle negative numbers.
+        raw_consensus = result[0]
+        if "(" in raw_consensus:
+            # We have an expected loss.
+            consensus = float(re.findall(r"[0-9\.]+", raw_consensus)[0]) * -1
+        else:
+            # We have an expected gain.
+            consensus = float(re.findall(r"[0-9\.]+", raw_consensus)[0])
+
+        return consensus
+
+    def get_earnings(self):
+        """Get earnings or loss data."""
+        # Look for positive earnings by default.
+        regex = r"reported (?:earnings of )?\$([0-9\.]+)"
+
+        # Sometimes there's a loss. 😞
+        if "reported a loss of" in self.tweet_text:
+            regex = r"reported a loss of \$([0-9\.]+)"
+
+        result = re.findall(regex, self.tweet_text)
+
+        if result:
+            return float(result[0])
+
+        return None
+
+    def get_emoji(self, earnings, consensus):
+        """Return an emoji based on the earnings outcome."""
+        if not consensus:
+            return "🤷🏻‍♂️"
+        elif earnings < consensus:
+            return "🔴"
+        else:
+            return "🟢"
+
+    def get_ticker(self):
+        """Extract ticker from the tweet text."""
+        result = re.findall(r'^\$([A-Z]+)', self.tweet_text)
+
+        if result:
+            return result[0]
+
+        return None
+
+    def parse(self):
+        """Parse tweet data."""
+        # Parse the stock ticker.
+        ticker = self.get_ticker()
+        if not ticker:
+            return None
+
+        # Earnings or a loss?
+        earnings = self.get_earnings()
+
+        # Get the earnings concensus.
+        consensus = self.get_consensus()
+
+        # Get an emoji based on the earnings outcome.
+        emoji = self.get_emoji(earnings, consensus)
+
+        return {
+            "ticker": ticker,
+            "earnings": earnings,
+            "consensus": consensus,
+            "emoji": emoji
+        }
+
+    def generate_message(self, tweet):
+        """Generate a discord message based on the earnings result."""
+        self.tweet_text = tweet['text']
+
+        parsed = self.parse()
+        if not parsed:
+            return None
+
+        message = (
+            f"{parsed['emoji']} **{parsed['ticker']}**: `{parsed['earnings']}`"
+            f" (expected: `{parsed['consensus'] or 'unknown'}`)"
+        )
+
+        return message
 
 
 # Create a class to handle stream events.
@@ -95,17 +164,18 @@ class IDPrinter(tweepy.Stream):
             logging.info(raw_data['text'])
             return
 
-        parsed = parse_earnings(raw_data)
+        ep = EarningsPublisher()
+        parsed = ep.generate_message(raw_data['text'])
 
         if not parsed:
             logging.info(f"🤷🏻‍♂️ Parse failed on {raw_data['text']}")
             return
 
-        if not recently_traded(parsed['symbol']):
-            logging.info(f"⭕ No recent trades for {parsed['symbol']}")
-            return
+        # if not recently_traded(parsed['ticker']):
+        #     logging.info(f"⭕ No recent trades for {parsed['ticker']}")
+        #     return
 
-        logging.info(f"📤 Sending discord message for {parsed['symbol']}")
+        logging.info(f"📤 Sending discord message for {parsed['ticker']}")
         create_discord_message(parsed)
 
 
