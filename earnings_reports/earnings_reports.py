@@ -165,7 +165,7 @@ class IDPrinter(tweepy.Stream):
             return
 
         ep = EarningsPublisher()
-        parsed = ep.generate_message(raw_data['text'])
+        parsed = ep.generate_message(raw_data)
 
         if not parsed:
             logging.info(f"🤷🏻‍♂️ Parse failed on {raw_data['text']}")
