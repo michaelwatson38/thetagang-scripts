@@ -92,12 +92,14 @@ class PatronTrades:
             quantity_string = ""
 
         title = (
-            f"${data['symbol']}: {data['trade_type']}{quantity_string} @ "
-            f"{data['strikes_string']} for ${data['price']}"
+            f"${data['symbol']}: {data['trade_type']}{quantity_string} @"
         )
 
         # Stock trades have no expiration (in theory). 🤣
-        if "COMMON STOCK" not in data['trade_type']:
+        if "COMMON STOCK" in data['trade_type']:
+            title += f" ${data['price']}"
+        else:
+            title += f" {data['strikes_string']} for ${data['price']}"
             title += f" on {data['expiry']} "
 
         return title
