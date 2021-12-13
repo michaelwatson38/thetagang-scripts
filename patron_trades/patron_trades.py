@@ -15,7 +15,7 @@ import requests
 # Set up logging.
 logging.basicConfig(
     stream=sys.stdout,
-    level=logging.DEBUG,
+    level=logging.INFO,
     format="%(asctime)s;%(levelname)s;%(message)s"
 )
 
@@ -171,7 +171,7 @@ class PatronTrades:
 
             # Skip this trade if we've seen it before.
             if trade['guid'] in self.seen_trades:
-                logging.info(f"Trade {trade['guid']} was seen before")
+                #logging.info(f"Trade {trade['guid']} was seen before")
                 continue
 
             # Skip alerts if we are running the script for the first time.
@@ -179,7 +179,7 @@ class PatronTrades:
                 self.send_discord_webhook(data)
 
             # Add this trade to the list of seen trades.
-            logging.info(f"Adding {trade['guid']} to the list of seen trades")
+            #logging.info(f"Adding {trade['guid']} to the list of seen trades")
             self.seen_trades.append(trade['guid'])
 
         # We've completed the first run by this point.
