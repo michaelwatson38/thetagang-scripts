@@ -165,18 +165,18 @@ class IDPrinter(tweepy.Stream):
             return
 
         ep = EarningsPublisher()
-        parsed = ep.generate_message(raw_data)
+        message = ep.generate_message(raw_data)
 
-        if not parsed:
+        if not message:
             logging.info(f"🤷🏻‍♂️ Parse failed on {raw_data['text']}")
             return
 
         # if not recently_traded(parsed['ticker']):
-        #     logging.info(f"⭕ No recent trades for {parsed['ticker']}")
+        #     logging.info(f"⭕ No recent trades for {raw_data['text']}")
         #     return
 
-        logging.info(f"📤 Sending discord message for {parsed['ticker']}")
-        create_discord_message(parsed)
+        logging.info(f"📤 Sending discord message for {raw_data['text']}")
+        create_discord_message(message)
 
 
 # Print a message to Discord noting that we started up.
