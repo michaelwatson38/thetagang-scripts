@@ -33,7 +33,7 @@ def create_discord_message(message):
     webhook = DiscordWebhook(
         url=WEBHOOK_URL,
         content=message,
-        username="Earnings Bot 💰",
+        username="💰🤖",
         rate_limit_retry=True
     )
     return webhook.execute()
@@ -146,8 +146,8 @@ class EarningsPublisher(object):
             return None
 
         message = (
-            f"{parsed['emoji']} **{parsed['ticker']}**: `{parsed['earnings']}`"
-            f" (expected: `{parsed['consensus'] or 'unknown'}`)"
+            f"{parsed['emoji']} **{parsed['ticker']}**: {parsed['earnings']}"
+            f" (expected: {parsed['consensus'] or 'unknown'})"
         )
 
         return message
